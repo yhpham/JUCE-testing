@@ -127,7 +127,8 @@ struct SynthAudioSource  : public AudioSource {
 class MainContentComponent  : public Component,
 private ComboBox::Listener,
 private MidiInputCallback,
-private MidiKeyboardStateListener {
+private MidiKeyboardStateListener,
+private Button::Listener {
 public:
     MainContentComponent() : lastInputIndex (0),
     isAddingFromMidiInput (false),
@@ -140,6 +141,25 @@ public:
         
         addAndMakeVisible (midiMessagesBox);
         midiMessagesBox.setMultiLine (true);
+        
+        addAndMakeVisible (recordButton);
+        recordButton.setButtonText ("Record");
+        recordButton.addListener (this);
+        
+        addAndMakeVisible (stopRecordButton);
+        stopRecordButton.setButtonText ("Stop Recording");
+        stopRecordButton.addListener (this);
+        
+        addAndMakeVisible (notesButton);
+        notesButton.setButtonText ("Set notes");
+//        notesButton.setRadioGroupId (321);
+        notesButton.addListener (this);
+//        notesButton.setToggleState (true, dontSendNotification);
+        
+        addAndMakeVisible (rhythmButton);
+        rhythmButton.setButtonText ("Set rhythm");
+//        rhythmButton.setRadioGroupId (321);
+        rhythmButton.addListener (this);
         
         audioSourcePlayer.setSource (&synthAudioSource);
         deviceManager.addAudioCallback (&audioSourcePlayer);
@@ -159,6 +179,10 @@ public:
         Rectangle<int> area (getLocalBounds());
         keyboardComponent.setBounds (area.removeFromTop (80).reduced(8));
         midiMessagesBox.setBounds (area.reduced (8));
+        recordButton.setBounds (16, 125, 150, 24);
+        stopRecordButton.setBounds (16, 150, 150, 24);
+        notesButton.setBounds (16, 175, 150, 24);
+        rhythmButton.setBounds (16, 200, 150, 24);
     }
     
 private:
@@ -195,14 +219,16 @@ private:
             MidiMessage m (MidiMessage::noteOn (midiChannel, midiNoteNumber, velocity));
             m.setTimeStamp (Time::getMillisecondCounterHiRes() * 0.001);
             
-            std::cout << MidiMessage::getMidiNoteName (m.getNoteNumber(), true, true, 3) << std::endl;
-            notes.push_back(MidiMessage::getMidiNoteName (m.getNoteNumber(), true, true, 3));
+            if (record and setNotes) {
+                std::cout << MidiMessage::getMidiNoteName (m.getNoteNumber(), true, true, 3) << std::endl;
+                notes.push_back(MidiMessage::getMidiNoteName (m.getNoteNumber(), true, true, 3));
             
-            std::cout << "Notes so far: ";
-            for (int i = 0; i < notes.size(); i++) {
-                std::cout << notes[i] << ", ";
+                std::cout << "Notes so far: ";
+                for (int i = 0; i < notes.size(); i++) {
+                    std::cout << notes[i] << ", ";
+                }
+                std::cout << std::endl;
             }
-            std::cout << std::endl;
             
             postMessageToList (m, "On-Screen Keyboard");
         }
@@ -246,13 +272,16 @@ private:
         
         const String timecode (String::formatted ("%02d:%02d:%02d.%03d", hours, minutes, seconds, millis));
         
-        times.push_back(timecode);
-        std::cout << timecode << std::endl;
+        
+        if (record and setRhythm) {
+            times.push_back(timecode);
+            std::cout << timecode << std::endl;
+        }
         
         const String description (getMidiMessageDescription (message));
         
         const String midiMessageString (timecode + "  -  " + description + " (" + source + ")");
-        logMessage (midiMessageString);
+//        logMessage (midiMessageString);
     }
     
     //==============================================================================
@@ -269,7 +298,32 @@ private:
     AudioSourcePlayer audioSourcePlayer;
     SynthAudioSource synthAudioSource;
     
+    TextButton recordButton;
+    TextButton stopRecordButton;
+    ToggleButton notesButton;
+    ToggleButton rhythmButton;
+    bool record = false;
+    bool setNotes = false;
+    bool setRhythm = false;
+    
     //==============================================================================
+    void buttonClicked (Button* buttonThatWasClicked) {
+        if (buttonThatWasClicked == &recordButton and record == false) {
+            record = true;
+        }
+        else if (buttonThatWasClicked == &stopRecordButton and record == true) {
+            record = false;
+        }
+        else if (buttonThatWasClicked == &notesButton) {
+            setNotes = true;
+            setRhythm = false;
+        }
+        else if (buttonThatWasClicked == &rhythmButton) {
+            setNotes = false;
+            setRhythm = true;
+        }
+    }
+    
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainContentComponent);
 };
 
