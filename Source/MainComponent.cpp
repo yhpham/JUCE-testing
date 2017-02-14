@@ -152,13 +152,13 @@ public:
         
         addAndMakeVisible (notesButton);
         notesButton.setButtonText ("Set notes");
-//        notesButton.setRadioGroupId (321);
+        notesButton.setRadioGroupId (1);
         notesButton.addListener (this);
 //        notesButton.setToggleState (true, dontSendNotification);
         
         addAndMakeVisible (rhythmButton);
         rhythmButton.setButtonText ("Set rhythm");
-//        rhythmButton.setRadioGroupId (321);
+        rhythmButton.setRadioGroupId (1);
         rhythmButton.addListener (this);
         
         audioSourcePlayer.setSource (&synthAudioSource);
@@ -179,6 +179,7 @@ public:
         Rectangle<int> area (getLocalBounds());
         keyboardComponent.setBounds (area.removeFromTop (80).reduced(8));
         midiMessagesBox.setBounds (area.reduced (8));
+        
         recordButton.setBounds (16, 125, 150, 24);
         stopRecordButton.setBounds (16, 150, 150, 24);
         notesButton.setBounds (16, 175, 150, 24);
