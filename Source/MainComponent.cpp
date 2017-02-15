@@ -4,6 +4,7 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 #include <iostream>
 #include <vector>
+#include <string>
 
 struct SineWaveSound : public SynthesiserSound {
     SineWaveSound() {}
@@ -150,11 +151,14 @@ public:
         stopRecordButton.setButtonText ("Stop Recording");
         stopRecordButton.addListener (this);
         
+        addAndMakeVisible (playNotesButton);
+        playNotesButton.setButtonText ("Playback Notes");
+        playNotesButton.addListener (this);
+        
         addAndMakeVisible (notesButton);
         notesButton.setButtonText ("Set notes");
         notesButton.setRadioGroupId (1);
         notesButton.addListener (this);
-//        notesButton.setToggleState (true, dontSendNotification);
         
         addAndMakeVisible (rhythmButton);
         rhythmButton.setButtonText ("Set rhythm");
@@ -180,30 +184,14 @@ public:
         keyboardComponent.setBounds (area.removeFromTop (80).reduced(8));
         midiMessagesBox.setBounds (area.reduced (8));
         
-        recordButton.setBounds (16, 125, 150, 24);
-        stopRecordButton.setBounds (16, 150, 150, 24);
+        recordButton.setBounds (16, 100, 150, 24);
+        stopRecordButton.setBounds (16, 125, 150, 24);
+        playNotesButton.setBounds (16, 150, 150, 24);
         notesButton.setBounds (16, 175, 150, 24);
         rhythmButton.setBounds (16, 200, 150, 24);
     }
     
 private:
-    static String getMidiMessageDescription (const MidiMessage& m) {
-        if (m.isNoteOn()) {
-            return "Note on "  + MidiMessage::getMidiNoteName (m.getNoteNumber(), true, true, 3);
-        }
-        
-        if (m.isNoteOff()) {
-            return "Note off " + MidiMessage::getMidiNoteName (m.getNoteNumber(), true, true, 3);
-        }
-        
-        return String::toHexString (m.getRawData(), m.getRawDataSize());
-    }
-    
-    void logMessage (const String& m) {
-        midiMessagesBox.moveCaretToEnd();
-        midiMessagesBox.insertTextAtCaret (m + newLine);
-    }
-    
     void comboBoxChanged (ComboBox* box) override {}
     
     void handleIncomingMidiMessage (MidiInput* source, const MidiMessage& message) override {
@@ -244,7 +232,7 @@ private:
     }
     
     class IncomingMessageCallback   : public CallbackMessage {
-    public:
+      public:
         IncomingMessageCallback (MainContentComponent* o, const MidiMessage& m, const String& s)
         : owner (o), message (m), source (s)
         {}
@@ -258,7 +246,7 @@ private:
         MidiMessage message;
         String source;
     };
-    
+  
     void postMessageToList (const MidiMessage& message, const String& source) {
         (new IncomingMessageCallback (this, message, source))->post();
     }
@@ -273,16 +261,64 @@ private:
         
         const String timecode (String::formatted ("%02d:%02d:%02d.%03d", hours, minutes, seconds, millis));
         
-        
         if (record and setRhythm) {
             times.push_back(timecode);
             std::cout << timecode << std::endl;
         }
+    }
+    
+    std::vector<int> notesMidi;
+    
+    void playNotes () {
+        for (int i = 0; i < notes.size(); i++) {
+            std::cout << notes[i] << " : " << convertNameToMidi(notes[i]) << std::endl;
+            notesMidi.push_back(convertNameToMidi(notes[i]));
+        }
+    }
+    
+    int convertNameToMidi (String noteString) {
+        std::string note = noteString.toStdString();
+
+        char noteChar = note.at(0);
+        char sharpSpot = note.at(1);
+        int base = 0;
         
-        const String description (getMidiMessageDescription (message));
+        switch (noteChar) {
+            case 'C':
+                if (sharpSpot == '#') base = 1;
+                break;
+            case 'D':
+                base = 2;
+                if (sharpSpot == '#') base = 3;
+                break;
+            case 'E':
+                base = 4;
+                break;
+            case 'F':
+                base = 5;
+                if (sharpSpot == '#') base = 6;
+                break;
+            case 'G':
+                base = 7;
+                if (sharpSpot == '#') base = 8;
+                break;
+            case 'A':
+                base = 9;
+                if (sharpSpot == '#') base = 10;
+                break;
+            case 'B':
+                base = 11;
+                break;
+        }
         
-        const String midiMessageString (timecode + "  -  " + description + " (" + source + ")");
-//        logMessage (midiMessageString);
+        if (note.substr(note.length() - 2) == "-1") {
+            return base;
+        }
+        else {
+            int octave = int(note.back()) - 48;
+//            std::cout << "note.back(): " << int(note.back()) << std::endl;
+            return 13*octave + base;
+        }
     }
     
     //==============================================================================
@@ -301,6 +337,7 @@ private:
     
     TextButton recordButton;
     TextButton stopRecordButton;
+    TextButton playNotesButton;
     ToggleButton notesButton;
     ToggleButton rhythmButton;
     bool record = false;
@@ -315,11 +352,16 @@ private:
         else if (buttonThatWasClicked == &stopRecordButton and record == true) {
             record = false;
         }
+        else if (buttonThatWasClicked == &playNotesButton) {
+            playNotes();
+        }
         else if (buttonThatWasClicked == &notesButton) {
+            notes.clear();
             setNotes = true;
             setRhythm = false;
         }
         else if (buttonThatWasClicked == &rhythmButton) {
+            times.clear();
             setNotes = false;
             setRhythm = true;
         }
