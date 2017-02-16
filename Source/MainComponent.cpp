@@ -140,9 +140,6 @@ public:
         addAndMakeVisible (keyboardComponent);
         keyboardState.addListener (this);
         
-        addAndMakeVisible (midiMessagesBox);
-        midiMessagesBox.setMultiLine (true);
-        
         addAndMakeVisible (recordButton);
         recordButton.setButtonText ("Record");
         recordButton.addListener (this);
@@ -182,7 +179,6 @@ public:
     void resized() override {
         Rectangle<int> area (getLocalBounds());
         keyboardComponent.setBounds (area.removeFromTop (80).reduced(8));
-        midiMessagesBox.setBounds (area.reduced (8));
         
         recordButton.setBounds (16, 100, 150, 24);
         stopRecordButton.setBounds (16, 125, 150, 24);
@@ -328,8 +324,7 @@ private:
     
     MidiKeyboardState keyboardState;
     MidiKeyboardComponent keyboardComponent;
-    
-    TextEditor midiMessagesBox;
+
     double startTime;
     
     AudioSourcePlayer audioSourcePlayer;
